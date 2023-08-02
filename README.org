@@ -1,0 +1,138 @@
+:PROPERTIES:
+:GPTEL_MODEL: gpt-3.5-turbo
+:GPTEL_BOUNDS: ((2389 . 2694) (2853 . 3963) (4069 . 5009) (5283 . 6669))
+:END:
+#+TITLE: Cecilia's website
+#+SUBTITLE: Proyecto de portafolio diseñador UX
+#+AUTHOR: Sebastian Godoy Olivares
+#+EMAIL: shackleto@riseup.net
+#+DATE: 
+#+DESCRIPTION: Desarrollo de personal website utilizando jekyll  
+#+KEYWORDS: ruby, rails, jekyll
+#+LANGUAGE: es
+#+OPTIONS: toc:nil num:nil
+#+CATEGORY: desarrollos
+#+TAGS: UX, docker, docker-compose, jekyll
+
+
+* Descripcion:
+El siguiente proyecto corresponde a un  desarrollo web, utilizando el framework Jekyll, se utiliza un template libre.
+y voy a contenerizar la aplicacion y configurarla como servicio, para ser gestionada un cualquier docker-host.
+#+begin_src bash
+ls -l
+#+end_src
+
+#+RESULTS:
+| total      | 168 |            |            |        |     |    |       |              |
+| -rwxr-xr-x |   1 | shackleton | shackleton |    286 | abr | 11 |  2022 | 404.html     |
+| -rwxr-xr-x |   1 | shackleton | shackleton |    567 | abr | 11 |  2022 | _config.yml  |
+| drwxr-xr-x |   2 | shackleton | shackleton |   4096 | abr | 11 |  2022 | _data        |
+| -rwxr-xr-x |   1 | shackleton | shackleton | 100251 | abr | 11 |  2022 | favicon.ico  |
+| -rwxr-xr-x |   1 | shackleton | shackleton |    120 | abr | 11 |  2022 | Gemfile      |
+| -rw-r--r-- |   1 | shackleton | shackleton |   1936 | ago |  2 | 14:17 | Gemfile.lock |
+| drwxr-xr-x |   2 | shackleton | shackleton |   4096 | abr | 11 |  2022 | images       |
+| drwxr-xr-x |   2 | shackleton | shackleton |   4096 | abr | 11 |  2022 | _includes    |
+| -rwxr-xr-x |   1 | shackleton | shackleton |    457 | abr | 11 |  2022 | index.html   |
+| drwxr-xr-x |   3 | shackleton | shackleton |   4096 | abr | 11 |  2022 | js           |
+| drwxr-xr-x |   2 | shackleton | shackleton |   4096 | abr | 11 |  2022 | _layouts     |
+| drwxr-xr-x |   2 | shackleton | shackleton |   4096 | abr | 11 |  2022 | _pages       |
+| drwxr-xr-x |   2 | shackleton | shackleton |   4096 | abr | 11 |  2022 | _posts       |
+| -rw-r--r-- |   1 | shackleton | shackleton |   4951 | abr | 11 |  2022 | README.md    |
+| drwxr-xr-x |   7 | shackleton | shackleton |   4096 | abr | 11 |  2022 | _sass        |
+| -rwxr-xr-x |   1 | shackleton | shackleton |    393 | abr | 11 |  2022 | search.json  |
+| drwxr-xr-x |   9 | shackleton | shackleton |   4096 | ago |  2 | 14:20 | _site        |
+
+This is Cecilia's website project, a portfolio design project for a UX designer. The project utilizes the Jekyll framework and a free template. The application will be containerized and configured as a service to be managed on any Docker host. The file listing shows the contents of the project directory.
+
+* Construye un Dockerfile, con la siguiente descripcion: base debian 11 minimo, actualiza e instala paqueteria necesaria para desplegar un proyecto jekyll.
+
+Aquí tienes un Dockerfile que utiliza una imagen base Debian 11 mínima y luego actualiza e instala los paquetes necesarios para desplegar un proyecto Jekyll:
+
+#+begin_src yaml :tangle Dockerfile
+FROM debian:11-slim
+
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y ruby-full build-essential zlib1g-dev
+
+RUN gem install jekyll bundler
+
+WORKDIR /app
+
+COPY Gemfile .
+RUN bundle install
+
+COPY . .
+
+CMD ["jekyll", "serve", "--host", "0.0.0.0"]
+#+end_src
+
+Este Dockerfile primero actualiza y actualiza los paquetes en la imagen base de Debian 11. Luego, instala Ruby, las herramientas de compilación necesarias y el desarrollo zlib para admitir Jekyll. A continuación, instala Jekyll y el administrador de dependencias Bundler. Luego configura el directorio de trabajo del contenedor como =/app= y copia el archivo =Gemfile= al contenedor. Después de eso, se instalan todas las dependencias del proyecto usando =bundle install=. Finalmente, se copia el resto del proyecto al contenedor y se configura el comando =jekyll serve= para iniciar el servidor Jekyll cuando se inicie el contenedor.
+
+*** como hacer en org-mode para que el codigo yaml del bloque src sea redirigido al archivo Dockerfile
+
+Puedes utilizar la función "org-babel-tangle" en Org Mode para redirigir el código YAML del bloque fuente a un archivo Dockerfile. Aquí tienes los pasos:
+
+1. En tu archivo Org, coloca el bloque de código YAML específico en un bloque de código fuente con la etiqueta =:tangle Dockerfile=:
+
+#+begin_src 
+#+begin_src yaml :tangle Dockerfile
+FROM debian:11-slim
+
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y ruby-full build-essential zlib1g-dev
+
+RUN gem install jekyll bundler
+
+WORKDIR /app
+
+COPY Gemfile .
+RUN bundle install
+
+COPY . .
+
+CMD ["jekyll", "serve", "--host", "0.0.0.0"]
+#+end_src
+#+end_src
+
+2. Ejecuta =C-c C-v t= (==org-babel-tangle==) en el bloque de código fuente. Esto guardará el código YAML en un archivo llamado "Dockerfile" en el mismo directorio que tu archivo Org.
+
+Los pasos anteriores garantizan que el código YAML contenido en el bloque de código fuente se guarde en un archivo Dockerfile.
+
+***  Ahora que tengo conterizada la aplicacion, necesito puedas construir el archivo main.tf para provisionar la maquina virtual con debian mas economica en Google cloud platform. Necesito que actualice el sistema operativo e instale git docker y docker compose curl gpg
+
+Aquí tienes un archivo main.tf para provisionar una máquina virtual con Debian en Google Cloud Platform y realizar las tareas de actualización del sistema operativo e instalación de git, Docker, Docker Compose, curl y gpg:
+
+#+begin_src hcl :tangle main.tf
+provider "google" {
+  project = "<TU_PROYECTO>"
+  region  = "us-central1"
+}
+
+module "instance" {
+  source = "terraform-google-modules/vm/google"
+
+  project_id      = "<TU_PROYECTO>"
+  name            = "my-instance"
+  region          = "us-central1"
+  zone            = "us-central1-a"
+  machine_type    = "e2-micro"
+  boot_disk_size  = 10
+  image           = "debian-cloud/debian-11"
+
+  metadata_startup_script = <<-EOT
+    #!/bin/bash
+    apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y git docker.io docker-compose curl gnupg
+  EOT
+}
+#+end_src
+
+Asegúrate de reemplazar =<TU_PROYECTO>= con el ID de tu proyecto en Google Cloud Platform. Este archivo de configuración de Terraform define un proveedor de Google Cloud, crea una instancia de máquina virtual en la región "us-central1" con una imagen de Debian 11, y ejecuta un script de inicio para actualizar el sistema operativo e instalar las herramientas necesarias.
+
+Puedes ejecutar =terraform init= y =terraform apply= en el directorio donde tienes este archivo main.tf para aplicar la configuración y crear la máquina virtual en Google Cloud Platform.
+
+***  
+
