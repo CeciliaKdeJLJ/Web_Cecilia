@@ -64,8 +64,8 @@ resource "google_compute_instance" "web_cecilia" {
 
   connection {
     type        = "ssh"
-    user        = "debian"
-#    private_key = file("~/.ssh/google_compute_engine")
+    user        = "shackleton"
+    private_key = file("~/.ssh/google_compute_engine")
     host        = google_compute_instance.web_cecilia.network_interface[0].access_config[0].nat_ip
   }
 }
