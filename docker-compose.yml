@@ -1,0 +1,49 @@
+version: '3'
+
+services:
+  traefik:
+    image: traefik
+    restart: always
+    command:
+      - "--providers.docker"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      - "--entrypoints.websecure.address=:443"
+      - "--providers.docker.exposedByDefault=false"
+      - "--api.insecure=true"
+      - "--log.level=DEBUG"
+      - "--providers.docker.defaultRule=Host(`{{ trimPrefix `/` .Name }}.*.itechile.cl`)"
+      - "--certificatesResolvers.cecilia-app.acme.httpChallenge=true"
+      - "--certificatesResolvers.cecilia-web.acme.httpChallenge.entryPoint=web"
+      - "--certificatesResolvers.cecilia-web.acme.email=shackleton@riseup.net"
+      - "--certificatesResolvers.cecilia-web.acme.storage=/letsencrypt/acme.json"
+
+    volumes:
+      - "./traefik/letsencrypt:/letsencrypt"
+      - "./traefik/traefik.yml:/etc/traefik.yml"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+
+  cecilia-web:
+    build:
+      context: .
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.cecilia-web.rule=Host(`ux.itechile.cl`)"
+      - "traefik.http.routers.cecilia-web.tls=true"
+      - "traefik.http.routers.cecilia-web.entrypoints=websecure"
+      - "traefik.http.services.cecilia-web.loadbalancer.server.port=4000"
+      - "traefik.http.routers.cecilia-web.tls.certresolver=itechile-webapp"
+      - "traefik.http.routers.http-catchall.rule=hostregexp(`{host:.+}`)"
+      - "traefik.http.routers.http-catchall.middlewares=redirect-to-https@docker"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+
+    command:
+      - /bin/sh
+      - -c
+      - "jekyll serve --host 0.0.0.0"
