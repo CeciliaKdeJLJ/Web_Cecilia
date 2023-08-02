@@ -1,6 +1,6 @@
 :PROPERTIES:
 :GPTEL_MODEL: gpt-3.5-turbo
-:GPTEL_BOUNDS: ((2389 . 2694) (2853 . 3963) (4069 . 5009) (5283 . 6669))
+:GPTEL_BOUNDS: ((477 . 782) (796 . 1115) (1127 . 1732))
 :END:
 #+TITLE: Cecilia's website
 #+SUBTITLE: Proyecto de portafolio diseñador UX
@@ -16,37 +16,9 @@
 
 
 * Descripcion:
-El siguiente proyecto corresponde a un  desarrollo web, utilizando el framework Jekyll, se utiliza un template libre.
-y voy a contenerizar la aplicacion y configurarla como servicio, para ser gestionada un cualquier docker-host.
-#+begin_src bash
-ls -l
-#+end_src
-
-#+RESULTS:
-| total      | 168 |            |            |        |     |    |       |              |
-| -rwxr-xr-x |   1 | shackleton | shackleton |    286 | abr | 11 |  2022 | 404.html     |
-| -rwxr-xr-x |   1 | shackleton | shackleton |    567 | abr | 11 |  2022 | _config.yml  |
-| drwxr-xr-x |   2 | shackleton | shackleton |   4096 | abr | 11 |  2022 | _data        |
-| -rwxr-xr-x |   1 | shackleton | shackleton | 100251 | abr | 11 |  2022 | favicon.ico  |
-| -rwxr-xr-x |   1 | shackleton | shackleton |    120 | abr | 11 |  2022 | Gemfile      |
-| -rw-r--r-- |   1 | shackleton | shackleton |   1936 | ago |  2 | 14:17 | Gemfile.lock |
-| drwxr-xr-x |   2 | shackleton | shackleton |   4096 | abr | 11 |  2022 | images       |
-| drwxr-xr-x |   2 | shackleton | shackleton |   4096 | abr | 11 |  2022 | _includes    |
-| -rwxr-xr-x |   1 | shackleton | shackleton |    457 | abr | 11 |  2022 | index.html   |
-| drwxr-xr-x |   3 | shackleton | shackleton |   4096 | abr | 11 |  2022 | js           |
-| drwxr-xr-x |   2 | shackleton | shackleton |   4096 | abr | 11 |  2022 | _layouts     |
-| drwxr-xr-x |   2 | shackleton | shackleton |   4096 | abr | 11 |  2022 | _pages       |
-| drwxr-xr-x |   2 | shackleton | shackleton |   4096 | abr | 11 |  2022 | _posts       |
-| -rw-r--r-- |   1 | shackleton | shackleton |   4951 | abr | 11 |  2022 | README.md    |
-| drwxr-xr-x |   7 | shackleton | shackleton |   4096 | abr | 11 |  2022 | _sass        |
-| -rwxr-xr-x |   1 | shackleton | shackleton |    393 | abr | 11 |  2022 | search.json  |
-| drwxr-xr-x |   9 | shackleton | shackleton |   4096 | ago |  2 | 14:20 | _site        |
-
 This is Cecilia's website project, a portfolio design project for a UX designer. The project utilizes the Jekyll framework and a free template. The application will be containerized and configured as a service to be managed on any Docker host. The file listing shows the contents of the project directory.
 
-* Construye un Dockerfile, con la siguiente descripcion: base debian 11 minimo, actualiza e instala paqueteria necesaria para desplegar un proyecto jekyll.
-
-Aquí tienes un Dockerfile que utiliza una imagen base Debian 11 mínima y luego actualiza e instala los paquetes necesarios para desplegar un proyecto Jekyll:
+* Dockerfile
 
 #+begin_src yaml :tangle Dockerfile
 FROM debian:11-slim
@@ -67,72 +39,125 @@ COPY . .
 CMD ["jekyll", "serve", "--host", "0.0.0.0"]
 #+end_src
 
-Este Dockerfile primero actualiza y actualiza los paquetes en la imagen base de Debian 11. Luego, instala Ruby, las herramientas de compilación necesarias y el desarrollo zlib para admitir Jekyll. A continuación, instala Jekyll y el administrador de dependencias Bundler. Luego configura el directorio de trabajo del contenedor como =/app= y copia el archivo =Gemfile= al contenedor. Después de eso, se instalan todas las dependencias del proyecto usando =bundle install=. Finalmente, se copia el resto del proyecto al contenedor y se configura el comando =jekyll serve= para iniciar el servidor Jekyll cuando se inicie el contenedor.
 
-*** como hacer en org-mode para que el codigo yaml del bloque src sea redirigido al archivo Dockerfile
+*  main.tf
 
-Puedes utilizar la función "org-babel-tangle" en Org Mode para redirigir el código YAML del bloque fuente a un archivo Dockerfile. Aquí tienes los pasos:
-
-1. En tu archivo Org, coloca el bloque de código YAML específico en un bloque de código fuente con la etiqueta =:tangle Dockerfile=:
-
-#+begin_src 
-#+begin_src yaml :tangle Dockerfile
-FROM debian:11-slim
-
-RUN apt-get update && \
-    apt-get upgrade -y && \
-    apt-get install -y ruby-full build-essential zlib1g-dev
-
-RUN gem install jekyll bundler
-
-WORKDIR /app
-
-COPY Gemfile .
-RUN bundle install
-
-COPY . .
-
-CMD ["jekyll", "serve", "--host", "0.0.0.0"]
-#+end_src
-#+end_src
-
-2. Ejecuta =C-c C-v t= (==org-babel-tangle==) en el bloque de código fuente. Esto guardará el código YAML en un archivo llamado "Dockerfile" en el mismo directorio que tu archivo Org.
-
-Los pasos anteriores garantizan que el código YAML contenido en el bloque de código fuente se guarde en un archivo Dockerfile.
-
-***  Ahora que tengo conterizada la aplicacion, necesito puedas construir el archivo main.tf para provisionar la maquina virtual con debian mas economica en Google cloud platform. Necesito que actualice el sistema operativo e instale git docker y docker compose curl gpg
-
-Aquí tienes un archivo main.tf para provisionar una máquina virtual con Debian en Google Cloud Platform y realizar las tareas de actualización del sistema operativo e instalación de git, Docker, Docker Compose, curl y gpg:
-
-#+begin_src hcl :tangle main.tf
+#+begin_src terraform :tangle main.tf
 provider "google" {
-  project = "<TU_PROYECTO>"
-  region  = "us-central1"
+  project = var.project_id
+  region  = var.region
+  zone    = var.zone
 }
 
-module "instance" {
-  source = "terraform-google-modules/vm/google"
 
-  project_id      = "<TU_PROYECTO>"
-  name            = "my-instance"
-  region          = "us-central1"
-  zone            = "us-central1-a"
-  machine_type    = "e2-micro"
-  boot_disk_size  = 10
-  image           = "debian-cloud/debian-11"
+# # DNS Record
+# resource "google_dns_record_set" "www" {
+#   name         = "www.your-domain.com."
+#   type         = "A"
+#   ttl          = 300
+#   managed_zone = "your-zone-name"
+#   rrdatas      = [google_compute_forwarding_rule.default.IP_address]
+# }
 
-  metadata_startup_script = <<-EOT
-    #!/bin/bash
-    apt-get update && \
-    apt-get upgrade -y && \
-    apt-get install -y git docker.io docker-compose curl gnupg
-  EOT
+
+# webserver
+resource "google_compute_instance" "web_cecilia" {
+  name              = "ux-itechile-cl"
+  machine_type      = "e2-micro"
+  zone              = var.zone
+
+  boot_disk {
+    initialize_params {
+      image = "debian-cloud/debian-11"
+      size  = 10
+    }
+  }
+
+  network_interface {
+    network = "default"
+  }
+
+  service_account {
+    scopes = [
+      "https://www.googleapis.com/auth/logging.write",
+      "https://www.googleapis.com/auth/monitoring",
+      "https://www.googleapis.com/auth/pubsub",
+      "https://www.googleapis.com/auth/service.management.readonly",
+      "https://www.googleapis.com/auth/servicecontrol",
+      "https://www.googleapis.com/auth/trace.append",
+    ]
+  }
 }
+
+metadata = {
+    ssh-keys = "debian:${file("~/.ssh/id_rsa.pub")}"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "sudo apt update",
+      "sudo apt install -y git curl apt-transport-https ca-certificates software-properties-common",
+      "curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add -",
+      "sudo add-apt-repository \"deb [arch=amd64] https://download.docker.com/linux/debian $(lsb_release -cs) stable\"",
+      "sudo apt update",
+      "sudo apt install -y docker-ce",
+      "sudo curl -L \"https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)\" -o /usr/local/bin/docker-compose",
+      "sudo chmod +x /usr/local/bin/docker-compose",
+    ]
+  }
+
 #+end_src
 
-Asegúrate de reemplazar =<TU_PROYECTO>= con el ID de tu proyecto en Google Cloud Platform. Este archivo de configuración de Terraform define un proveedor de Google Cloud, crea una instancia de máquina virtual en la región "us-central1" con una imagen de Debian 11, y ejecuta un script de inicio para actualizar el sistema operativo e instalar las herramientas necesarias.
+* docker-compose.yml
+#+begin_src yaml :tangle docker-compose.yml
+version: '3'
 
-Puedes ejecutar =terraform init= y =terraform apply= en el directorio donde tienes este archivo main.tf para aplicar la configuración y crear la máquina virtual en Google Cloud Platform.
+services:
+  traefik:
+    image: traefik
+    restart: always
+    command:
+      - "--providers.docker"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      - "--entrypoints.websecure.address=:443"
+      - "--providers.docker.exposedByDefault=false"
+      - "--api.insecure=true"
+      - "--log.level=DEBUG"
+      - "--providers.docker.defaultRule=Host(`{{ trimPrefix `/` .Name }}.*.itechile.cl`)"
+      - "--certificatesResolvers.cecilia-app.acme.httpChallenge=true"
+      - "--certificatesResolvers.cecilia-web.acme.httpChallenge.entryPoint=web"
+      - "--certificatesResolvers.cecilia-web.acme.email=shackleton@riseup.net"
+      - "--certificatesResolvers.cecilia-web.acme.storage=/letsencrypt/acme.json"
 
-***  
+    volumes:
+      - "./traefik/letsencrypt:/letsencrypt"
+      - "./traefik/traefik.yml:/etc/traefik.yml"
+      - "/var/run/docker.sock:/var/run/docker.sock"
 
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+
+  cecilia-web:
+    build:
+      context: .
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.cecilia-web.rule=Host(`ux.itechile.cl`)"
+      - "traefik.http.routers.cecilia-web.tls=true"
+      - "traefik.http.routers.cecilia-web.entrypoints=websecure"
+      - "traefik.http.services.cecilia-web.loadbalancer.server.port=4000"
+      - "traefik.http.routers.cecilia-web.tls.certresolver=itechile-webapp"
+      - "traefik.http.routers.http-catchall.rule=hostregexp(`{host:.+}`)"
+      - "traefik.http.routers.http-catchall.middlewares=redirect-to-https@docker"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+
+    command:
+      - /bin/sh
+      - -c
+      - "jekyll serve --host 0.0.0.0"
+
+#+end_src

@@ -38,7 +38,7 @@ services:
       - "traefik.http.routers.cecilia-web.tls=true"
       - "traefik.http.routers.cecilia-web.entrypoints=websecure"
       - "traefik.http.services.cecilia-web.loadbalancer.server.port=4000"
-      - "traefik.http.routers.cecilia-web.tls.certresolver=itechile-webapp"
+      - "traefik.http.routers.cecilia-web.tls.certresolver=cecilia-web"
       - "traefik.http.routers.http-catchall.rule=hostregexp(`{host:.+}`)"
       - "traefik.http.routers.http-catchall.middlewares=redirect-to-https@docker"
       - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
