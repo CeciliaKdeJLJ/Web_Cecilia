@@ -14,3 +14,5 @@ RUN bundle install
 COPY . .
 
 CMD ["jekyll", "serve", "--host", "0.0.0.0"]
+
+EXPOSE 4000
