@@ -1,0 +1,165 @@
+:PROPERTIES:
+:GPTEL_MODEL: gpt-3.5-turbo
+:GPTEL_BOUNDS: ((477 . 782) (796 . 1115) (1127 . 1732))
+:END:
+#+TITLE: Cecilia's website
+#+SUBTITLE: Proyecto de portafolio diseñador UX
+#+AUTHOR: Sebastian Godoy Olivares
+#+EMAIL: shackleto@riseup.net
+#+DATE: 
+#+DESCRIPTION: Desarrollo de personal website utilizando jekyll  
+#+KEYWORDS: ruby, rails, jekyll
+#+LANGUAGE: es
+#+OPTIONS: toc:nil num:nil
+#+CATEGORY: desarrollos
+#+TAGS: UX, docker, docker-compose, jekyll
+
+
+* Descripcion:
+This is Cecilia's website project, a portfolio design project for a UX designer. The project utilizes the Jekyll framework and a free template. The application will be containerized and configured as a service to be managed on any Docker host. The file listing shows the contents of the project directory.
+
+* Dockerfile
+
+#+begin_src yaml :tangle Dockerfile
+FROM debian:11-slim
+
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y ruby-full build-essential zlib1g-dev
+
+RUN gem install jekyll bundler
+
+WORKDIR /app
+
+COPY Gemfile .
+RUN bundle install
+
+COPY . .
+
+CMD ["jekyll", "serve", "--host", "0.0.0.0"]
+
+EXPOSE 4000
+#+end_src
+
+
+*  main.tf
+
+#+begin_src terraform :tangle main.tf
+provider "google" {
+  project = var.project_id
+  region  = var.region
+  zone    = var.zone
+}
+
+
+# # DNS Record
+# resource "google_dns_record_set" "www" {
+#   name         = "www.your-domain.com."
+#   type         = "A"
+#   ttl          = 300
+#   managed_zone = "your-zone-name"
+#   rrdatas      = [google_compute_forwarding_rule.default.IP_address]
+# }
+
+
+# webserver
+resource "google_compute_instance" "web_cecilia" {
+  name              = "ux-itechile-cl"
+  machine_type      = "e2-micro"
+  zone              = var.zone
+
+  boot_disk {
+    initialize_params {
+      image = "debian-cloud/debian-11"
+      size  = 10
+    }
+  }
+
+  network_interface {
+    network = "default"
+  }
+
+  service_account {
+    scopes = [
+      "https://www.googleapis.com/auth/logging.write",
+      "https://www.googleapis.com/auth/monitoring",
+      "https://www.googleapis.com/auth/pubsub",
+      "https://www.googleapis.com/auth/service.management.readonly",
+      "https://www.googleapis.com/auth/servicecontrol",
+      "https://www.googleapis.com/auth/trace.append",
+    ]
+  }
+}
+
+metadata = {
+    ssh-keys = "debian:${file("~/.ssh/id_rsa.pub")}"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "sudo apt update",
+      "sudo apt install -y git curl apt-transport-https ca-certificates software-properties-common",
+      "curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add -",
+      "sudo add-apt-repository \"deb [arch=amd64] https://download.docker.com/linux/debian $(lsb_release -cs) stable\"",
+      "sudo apt update",
+      "sudo apt install -y docker-ce",
+      "sudo curl -L \"https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)\" -o /usr/local/bin/docker-compose",
+      "sudo chmod +x /usr/local/bin/docker-compose",
+    ]
+  }
+
+#+end_src
+
+* docker-compose.yml
+#+begin_src yaml :tangle docker-compose.yml
+version: '3'
+
+services:
+  traefik:
+    image: traefik
+    restart: always
+    command:
+      - "--providers.docker"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      - "--entrypoints.websecure.address=:443"
+      - "--providers.docker.exposedByDefault=false"
+      - "--api.insecure=true"
+      - "--log.level=DEBUG"
+      - "--providers.docker.defaultRule=Host(`{{ trimPrefix `/` .Name }}.*.itechile.cl`)"
+      - "--certificatesResolvers.cecilia-app.acme.httpChallenge=true"
+      - "--certificatesResolvers.cecilia-web.acme.httpChallenge.entryPoint=web"
+      - "--certificatesResolvers.cecilia-web.acme.email=shackleton@riseup.net"
+      - "--certificatesResolvers.cecilia-web.acme.storage=/letsencrypt/acme.json"
+
+    volumes:
+      - "./traefik/letsencrypt:/letsencrypt"
+      - "./traefik/traefik.yml:/etc/traefik.yml"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+
+  cecilia-web:
+    build:
+      context: .
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.cecilia-web.rule=Host(`ux.itechile.cl`)"
+      - "traefik.http.routers.cecilia-web.tls=true"
+      - "traefik.http.routers.cecilia-web.entrypoints=websecure"
+      - "traefik.http.services.cecilia-web.loadbalancer.server.port=4000"
+      - "traefik.http.routers.cecilia-web.tls.certresolver=itechile-webapp"
+      - "traefik.http.routers.http-catchall.rule=hostregexp(`{host:.+}`)"
+      - "traefik.http.routers.http-catchall.middlewares=redirect-to-https@docker"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+
+    command:
+      - /bin/sh
+      - -c
+      - "jekyll serve --host 0.0.0.0"
+
+#+end_src
